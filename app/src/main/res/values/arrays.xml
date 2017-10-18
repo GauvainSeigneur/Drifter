@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="images">
+        <item>@drawable/ga_april</item>
+        <item>@drawable/ga_august</item>
+        <item>@drawable/ga_sup1</item>
+        <item>@drawable/ga_february</item>
+        <item>@drawable/ga_may</item>
+    </array>
+
+</resources>

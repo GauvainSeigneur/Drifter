@@ -22,6 +22,9 @@ public class RecyclerView_Adapter extends RecyclerView.Adapter<ViewHolder> {
 
     List<Audio> list = Collections.emptyList();
     Context context;
+    int visibleItem =4;
+    public int num = 1;
+    public int displaySize;
 
     public RecyclerView_Adapter(List<Audio> list, Context context) {
         this.list = list;
@@ -49,12 +52,24 @@ public class RecyclerView_Adapter extends RecyclerView.Adapter<ViewHolder> {
     @Override
     public int getItemCount() {
         //returns the number of elements the RecyclerView will display
-        return list.size();
+        //return list.size();
+        if(displaySize > list.size())
+            return list.size();
+        else
+            return displaySize;
+
     }
 
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
         super.onAttachedToRecyclerView(recyclerView);
+    }
+
+
+    public void setDisplayCount(int numberOfEntries) {
+        displaySize = numberOfEntries;
+        notifyDataSetChanged();
+
     }
 
 }

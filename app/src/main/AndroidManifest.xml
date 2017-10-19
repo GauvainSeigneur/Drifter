@@ -20,9 +20,12 @@
             android:name=".HomeActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar" />
-        <activity android:name=".MainActivity">
+        <activity android:name=".TestActivityTwo">
         </activity>
         <activity android:name=".TestActivity">
+        </activity>
+        <activity android:name=".MainActivity"
+            android:theme="@style/AppTheme.BottomNavigationActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

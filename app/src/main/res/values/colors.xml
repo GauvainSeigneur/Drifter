@@ -3,4 +3,19 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+
+    <!-- Bottom Navigation Color colours -->
+    <color name="bottom_nav_item_unchecked_color">#40222222</color>
+    <color name="bottomNavColor_1">#435A62</color>
+    <color name="bottomNavColor_2">#07856B</color>
+    <color name="bottomNavColor_3">#896A62</color>
+    <color name="bottomNavColor_4">#694842</color>
+    <color name="bottomNavColor_5">#2196F3</color>
+
+    <!--others colors-->
+    <color name="md_grey_50">#FAFAFA</color>
+    <color name="immersive_bars">#8a000000</color>
+
+    <color name="colorWhite">#FFFFFFFF</color>
+
 </resources>

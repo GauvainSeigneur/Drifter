@@ -1,6 +1,5 @@
 package io.drifterapp.drifter.mediaService;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -10,7 +9,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Icon;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.session.MediaSession;
@@ -30,7 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import io.drifterapp.drifter.Audio;
-import io.drifterapp.drifter.MainActivity;
+import io.drifterapp.drifter.TestActivityTwo;
 import io.drifterapp.drifter.R;
 
 /**
@@ -662,7 +660,7 @@ public class MediaPlayerService extends Service implements
 
     private void register_playNewAudio() {
         //Register playNewMedia receiver
-        IntentFilter filter = new IntentFilter(MainActivity.Broadcast_PLAY_NEW_AUDIO);
+        IntentFilter filter = new IntentFilter(TestActivityTwo.Broadcast_PLAY_NEW_AUDIO);
         registerReceiver(playNewAudio, filter);
     }
 

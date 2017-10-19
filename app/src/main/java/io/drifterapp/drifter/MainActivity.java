@@ -1,359 +1,338 @@
 package io.drifterapp.drifter;
 
-import android.Manifest;
-import android.content.ComponentName;
-import android.content.ContentResolver;
-import android.content.ContentUris;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
-import android.content.res.TypedArray;
-import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.net.Uri;
-import android.os.Build;
-import android.os.IBinder;
-import android.os.PersistableBundle;
-import android.provider.MediaStore;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+import android.content.res.Resources;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.Toast;
+import android.view.ViewAnimationUtils;
+import android.view.ViewConfiguration;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
+import android.widget.Switch;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import io.drifterapp.drifter.mediaService.MediaPlayerService;
-import io.drifterapp.drifter.mediaService.MediaStorageUtil;
-import io.drifterapp.drifter.recyclerView.CustomTouchListener;
-import io.drifterapp.drifter.recyclerView.RecyclerView_Adapter;
-import io.drifterapp.drifter.recyclerView.onItemClickListener;
-
-import static android.os.Build.VERSION.SDK_INT;
+import io.drifterapp.drifter.utils.Utils;
 
 public class MainActivity extends AppCompatActivity {
-    public static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1;
-    public static final String Broadcast_PLAY_NEW_AUDIO = "com.valdioveliu.valdio.audioplayer.PlayNewAudio";
 
-    private MediaPlayerService player;
-    boolean serviceBound = false;
-    ArrayList<Audio> audioList;
-    ImageView collapsingImageView;
-    int imageIndex = 0;
+    private Context context;
+    private Resources res;
+    private boolean mShiftingMode=true;
+    private RelativeLayout bottomNavParentlayout;
+    private BottomNavigationView mBottomNavigationView;
+    private FrameLayout bottomNavBackgroundContainer;
+    private View constantBackground;
+    private View revealBackground;
+    private View revealFront;
+    private boolean iscolorRevealBackground;
+    private static final long ACTIVE_ANIMATION_DURATION_MS = 115L;
+    private int totalNavItems;
+    private int activeWidth;
+    private int inactiveWidth;
+    private int targetWidth;
+    private int[] colorNumberarray;
+    //for reveal color with shift mode
+    private int currentItemSelected;
+    private int previousItemSelected;
+    private int revealItemPosition;
+    private int revealFinalPosition;
+    //choose type of colorRevealMode
+    //Others Views
+    private CoordinatorLayout parentLayout;
+    //BottomSheet
+    FrameLayout bottomPlayer;
+    BottomSheetBehavior bottomSheetBehavior;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        collapsingImageView = (ImageView) findViewById(R.id.collapsingImageView);
-        loadCollapsingImage(imageIndex);
+        context=this;
+        res = getResources();
+        initViews();
+        initBottomNavigationview(false,true,R.color.bottomNavColor_1);
+        //redefinne height of bottom nav to set it under navigation bar
+        //only if a soft navigation bar is available
+        setBottomNavUnderNavigationbar();
+        //set up click listner on bottom navigation menu
+        mBottomNavigationView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
-        if (checkAndRequestPermissions()) {
-            loadAudioList();
-        }
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        bottomPlayer = (FrameLayout) findViewById(R.id.bottom_player_sheet);
+        // init the bottom sheet behavior
+        bottomSheetBehavior = BottomSheetBehavior.from(bottomPlayer);
+        // set the peek height
+        bottomSheetBehavior.setPeekHeight((int) Utils.convertDpToPixel(152,MainActivity.this));
+        // set callback for changes
+        bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
-            public void onClick(View view) {
-                //playAudio("https://upload.wikimedia.org/wikipedia/commons/6/6c/Grieg_Lyric_Pieces_Kobold.ogg");
-                //play the first audio in the ArrayList
-                //playAudio(2);
-                if (imageIndex == 4) {
-                    imageIndex = 0;
-                    loadCollapsingImage(imageIndex);
-                } else {
-                    loadCollapsingImage(++imageIndex);
-                }
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+
             }
         });
+
+
     }
 
-    private void loadAudioList() {
-        initAudio();
-        initRecyclerView();
+    /**********************************
+     * Initialize Views
+     *********************************/
+    public void initViews() {
+        parentLayout =(CoordinatorLayout) findViewById(R.id.container);
+        bottomNavParentlayout = (RelativeLayout) findViewById(R.id.bottom_nav_parent_layout);
+        bottomNavBackgroundContainer = (FrameLayout) findViewById(R.id.bottom_nav_background_container);
+        mBottomNavigationView = (BottomNavigationView) findViewById(R.id.navigation);
+        constantBackground = findViewById(R.id.navigation_constant_background);
+        revealBackground =findViewById(R.id.navigation_reveal_background);
+        revealFront =findViewById(R.id.navigation_reveal_front);
     }
 
-    private boolean checkAndRequestPermissions() {
-        if (SDK_INT >= Build.VERSION_CODES.M) {
-            int permissionReadPhoneState = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE);
-            int permissionStorage = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-            List<String> listPermissionsNeeded = new ArrayList<>();
+    /**********************************
+     * Initialize BottomNav Behavior
+     *********************************/
+    public void initBottomNavigationview(boolean disableShiftMode,
+                                         boolean makeRevealBackgroundAnimation,
+                                         int constantBackgroundColor) {
+        iscolorRevealBackground = makeRevealBackgroundAnimation;
+        if (makeRevealBackgroundAnimation==true) {
+            revealFront.setVisibility(View.VISIBLE);
+            revealFront.setBackgroundColor(ContextCompat.getColor(this, constantBackgroundColor));
+            revealBackground.setVisibility(View.VISIBLE);
+            revealBackground.setBackgroundColor(ContextCompat.getColor(this,
+                    constantBackgroundColor));
+            mBottomNavigationView.setBackgroundColor(ContextCompat.getColor(this,
+                    android.R.color.transparent));
+            constantBackground.setVisibility(View.VISIBLE);
+            constantBackground.setBackgroundColor(ContextCompat.getColor(this,
+                    constantBackgroundColor));
+        }else {
+            constantBackground.setVisibility(View.GONE);
+            revealFront.setVisibility(View.GONE);
+            revealBackground.setVisibility(View.GONE);
+            mBottomNavigationView.setBackgroundColor(ContextCompat.getColor(this,
+                    constantBackgroundColor));
+        }
 
-            if (permissionReadPhoneState != PackageManager.PERMISSION_GRANTED) {
-                listPermissionsNeeded.add(Manifest.permission.READ_PHONE_STATE);
-            }
+        //find reveal position on initialization to avoid dummy
+        // animation position on first item selection...
+        findRevealPosition();
 
-            if (permissionStorage != PackageManager.PERMISSION_GRANTED) {
-                listPermissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-            }
+    }
 
-            if (!listPermissionsNeeded.isEmpty()) {
-                ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), REQUEST_ID_MULTIPLE_PERMISSIONS);
-                return false;
+    /*************************************
+     * Handle revealColor and Menu state
+     ************************************/
+    public void retrieveMenuItemDimension() {
+        final int mInactiveItemMaxWidth = res.getDimensionPixelSize(android.support.design.R.dimen.design_bottom_navigation_item_max_width);
+        final int  mInactiveItemMinWidth = res.getDimensionPixelSize(android.support.design.R.dimen.design_bottom_navigation_item_min_width);
+        final int mActiveItemMaxWidth = res.getDimensionPixelSize(android.support.design.R.dimen.design_bottom_navigation_active_item_max_width);
+        final int inactiveCount = totalNavItems - 1;
+        final int bottomNavWidth = mBottomNavigationView.getResources().getDisplayMetrics().widthPixels;
+        //todo - comment
+        totalNavItems = mBottomNavigationView.getMenu().size();
+        //todo - comment
+        final int activeMaxAvailable = bottomNavWidth - inactiveCount * mInactiveItemMinWidth;
+        //todo - comment
+        activeWidth = Math.min(activeMaxAvailable, mActiveItemMaxWidth);
+        //todo - comment
+        final int inactiveMaxAvailable = (bottomNavWidth - activeWidth) / inactiveCount;
+        //todo - comment
+        inactiveWidth = Math.min(inactiveMaxAvailable, mInactiveItemMaxWidth);
+        //todo - comment
+        targetWidth=inactiveWidth/2;
+    }
+
+
+    //Find the position of each item of the BottomNavigationView
+    //Even if the shiftMode is activated
+    public void findRevealPosition() {
+        retrieveMenuItemDimension();
+        //find position of selected item when shiftingmode is activated
+        if (mShiftingMode==true && totalNavItems>3) {
+            if (currentItemSelected == previousItemSelected) {
+                revealItemPosition = activeWidth / 2;
+                revealFinalPosition = revealItemPosition + (inactiveWidth * currentItemSelected);
             } else {
-                return true;
+                revealItemPosition = inactiveWidth / 2;
+                if (currentItemSelected < previousItemSelected) {
+                    revealFinalPosition = revealItemPosition + (inactiveWidth
+                            * currentItemSelected);
+                } else if (currentItemSelected > previousItemSelected) {
+                    revealFinalPosition = revealItemPosition + activeWidth + (inactiveWidth *
+                            (currentItemSelected - 1));
+                }
+
+            }
+
+        } else {
+            //if shiftmode is disabled or number of item is under four,
+            //the item are equally distribued inside menu
+            //we use these method to find the center of each item
+            int bottomNavWidth = (getResources().getDisplayMetrics().widthPixels);
+            int bottomNavItemSize = ((bottomNavWidth/totalNavItems)); //find width of items
+            double itemTargetCenter = (((bottomNavItemSize)*(currentItemSelected+1))
+                    -(bottomNavItemSize/2)); //find center of selected item
+            revealFinalPosition = (int) itemTargetCenter;
+        }
+    }
+
+    //handle reveal color background on item click
+    //Handle of if you use makeMultipleRevealMode or makeOneRevealBackground
+    public void setRevealColorAnimationBackground(@Nullable int revalColorArray, final int pos){
+        colorNumberarray = context.getResources().getIntArray(revalColorArray);
+
+        if (iscolorRevealBackground && currentItemSelected != previousItemSelected) {
+            mBottomNavigationView.setBackgroundColor(ContextCompat.getColor(this,
+                    android.R.color.transparent));
+
+            makeMultipleRevealMode(circularRevealAnimator(revealFront, targetWidth), pos);
+
+        }
+
+    }
+
+    //Circular Reveal Animator
+    private Animator circularRevealAnimator (View viewTarget, int startRevealRadius){
+        findRevealPosition();
+        float HeightrevealPosition = Utils.convertDpToPixel(56/2,this);
+        Animator animator =
+                ViewAnimationUtils.createCircularReveal(
+                        viewTarget,
+                        revealFinalPosition,
+                        (int) HeightrevealPosition,
+                        startRevealRadius,//0,
+                        mBottomNavigationView.getWidth()
+                );
+        //duration : triple of icon animation duration
+        animator.setDuration(ACTIVE_ANIMATION_DURATION_MS * 3);
+        return animator;
+    }
+
+    //Used to make different color for each item thanks to a array of color hexa
+    private void makeMultipleRevealMode(Animator animator,final int pos){
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                revealFront.setBackgroundColor(colorNumberarray[pos]);
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                revealBackground.setBackgroundColor(colorNumberarray[pos]);
+            }
+        });
+
+        animator.start();
+
+    }
+
+    //retrieve the menu state
+    //used to define the previous selected item and the current
+    private void updateBottomNavMenuState(@NonNull MenuItem item) {
+        for (int i=0;i<mBottomNavigationView.getMenu().size();i++){
+            if(item==mBottomNavigationView.getMenu().getItem(i)){
+                previousItemSelected = currentItemSelected;
+                currentItemSelected = i;
+                break;
             }
         }
-        return false;
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[],
-                                           int[] grantResults) {
-        String TAG = "LOG_PERMISSION";
-        Log.d(TAG, "Permission callback called-------");
-        switch (requestCode) {
-            case REQUEST_ID_MULTIPLE_PERMISSIONS: {
-
-                Map<String, Integer> perms = new HashMap<>();
-                // Initialize the map with both permissions
-                perms.put(Manifest.permission.READ_PHONE_STATE, PackageManager.PERMISSION_GRANTED);
-                perms.put(Manifest.permission.READ_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
-                // Fill with actual results from user
-                if (grantResults.length > 0) {
-                    for (int i = 0; i < permissions.length; i++)
-                        perms.put(permissions[i], grantResults[i]);
-                    // Check for both permissions
-
-                    if (perms.get(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
-                            && perms.get(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                            ) {
-                        Log.d(TAG, "Phone state and storage permissions granted");
-                        // process the normal flow
-                        //else any one or both the permissions are not granted
-                        loadAudioList();
-                    } else {
-                        Log.d(TAG, "Some permissions are not granted ask again ");
-                        //permission is denied (this is the first time, when "never ask again" is not checked) so ask again explaining the usage of permission
-                        //shouldShowRequestPermissionRationale will return true
-                        //show the dialog or snackbar saying its necessary and try again otherwise proceed with setup.
-                        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE) ||
-                                ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_PHONE_STATE)) {
-                            showDialogOK("Phone state and storage permissions required for this app",
-                                    new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            switch (which) {
-                                                case DialogInterface.BUTTON_POSITIVE:
-                                                    checkAndRequestPermissions();
-                                                    break;
-                                                case DialogInterface.BUTTON_NEGATIVE:
-                                                    // proceed with logic by disabling the related features or quit the app.
-                                                    break;
-                                            }
-                                        }
-                                    });
-                        }
-                        //permission is denied (and never ask again is  checked)
-                        //shouldShowRequestPermissionRationale will return false
-                        else {
-                            Toast.makeText(this, "Go to settings and enable permissions", Toast.LENGTH_LONG)
-                                    .show();
-                            //proceed with logic by disabling the related features or quit the app.
-                        }
-                    }
-                }
+    /***************************************************
+     * OnClick Listener for BottomNavigation Menu Item
+     ***************************************************/
+    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            updateBottomNavMenuState(item);
+            setRevealColorAnimationBackground(R.array.reveal_bottom_nav_bg, currentItemSelected);
+            if (currentItemSelected!=previousItemSelected) {
+                //do something if you want like focus on top
             }
+            switch (item.getItemId()) {
+                case R.id.navigation_movies_tv:
+                    return true;
+                case R.id.navigation_music:
+                    return true;
+                case R.id.navigation_book:
+                    return true;
+                case R.id.navigation_newsstand:
+                    return true;
+                case R.id.navigation_dashboard:
+                    return true;
+            }
+
+            return false;
         }
 
-    }
-
-    private void showDialogOK(String message, DialogInterface.OnClickListener okListener) {
-        new AlertDialog.Builder(this)
-                .setMessage(message)
-                .setPositiveButton("OK", okListener)
-                .setNegativeButton("Cancel", okListener)
-                .create()
-                .show();
-    }
-
-
-    private void initRecyclerView() {
-        if (audioList != null && audioList.size() > 0) {
-            RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
-            RecyclerView_Adapter adapter = new RecyclerView_Adapter(audioList, getApplication());
-            recyclerView.setAdapter(adapter);
-            recyclerView.setLayoutManager(new LinearLayoutManager(this));
-            recyclerView.addOnItemTouchListener(new CustomTouchListener(this, new onItemClickListener() {
-                @Override
-                public void onClick(View view, int index) {
-                    playAudio(index);
-                }
-            }));
-        }
-    }
-
-    private void loadCollapsingImage(int i) {
-        TypedArray array = getResources().obtainTypedArray(R.array.images);
-        collapsingImageView.setImageDrawable(array.getDrawable(i));
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
-        super.onSaveInstanceState(outState, outPersistentState);
-        outState.putBoolean("serviceStatus", serviceBound);
-    }
-
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        serviceBound = savedInstanceState.getBoolean("serviceStatus");
-    }
-
-    //Binding this Client to the AudioPlayer Service
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            // We've bound to LocalService, cast the IBinder and get LocalService instance
-            MediaPlayerService.LocalBinder binder = (MediaPlayerService.LocalBinder) service;
-            player = binder.getService();
-            serviceBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            serviceBound = false;
-        }
     };
 
+    /**********************************
+     * Window Support
+     *********************************/
+    //this methd is used in addition to the style "AppTheme.BottomNavigationActivit"
+    // aplied on this activity in the manifest...
+    public void setBottomNavUnderNavigationbar() {
+        windowNoLimit();
+        if (hasSoftNavBar(this)) {
+            // 99% sure there's a navigation bar... does not work every time...
+            // so we redefine the height of the bottom navigation View
+            float newBottomNavHeight = Utils.convertDpToPixel(48+56,this);
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams)
+                    bottomNavBackgroundContainer.getLayoutParams();
+            params.height = (int) newBottomNavHeight;
+            bottomNavBackgroundContainer.setLayoutParams(params);
 
-    private void playAudio(int audioIndex) {
-        //Check is service is active
-        if (!serviceBound) {
-            //Store Serializable audioList to SharedPreferences
-            MediaStorageUtil storage = new MediaStorageUtil(getApplicationContext());
-            storage.storeAudio(audioList);
-            storage.storeAudioIndex(audioIndex);
-
-            Intent playerIntent = new Intent(this, MediaPlayerService.class);
-            startService(playerIntent);
-            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
-            //Store the new audioIndex to SharedPreferences
-            MediaStorageUtil storage = new MediaStorageUtil(getApplicationContext());
-            storage.storeAudioIndex(audioIndex);
-
-            //Service is active
-            //Send a broadcast to the service -> PLAY_NEW_AUDIO
-            Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
-            sendBroadcast(broadcastIntent);
+            //do nothing
         }
     }
 
-    /**
-     * Load audio files using {@link ContentResolver}
-     * <p>
-     * If this don't works for you, load the audio files to audioList Array your oun way
-     */
-    /*private void loadAudio() {
-        ContentResolver contentResolver = getContentResolver();
-
-        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";
-        String sortOrder = MediaStore.Audio.Media.TITLE + " ASC";
-        Cursor cursor = contentResolver.query(uri, null, selection, null, sortOrder);
-
-        if (cursor != null && cursor.getCount() > 0) {
-            audioList = new ArrayList<>();
-            while (cursor.moveToNext()) {
-
-                String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
-                String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-                String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
-                String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-
-
-                // Save to audioList
-                //audioList.add(new Audio(data, title, album, artist));
+    //check if the device has a soft navigationbar
+    //to draw behinf if it has it
+    boolean hasSoftNavBar(Context context) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            // navigation bar was introduced in Android 4.0 (API level 14)
+            Resources resources = context.getResources();
+            int id = resources.getIdentifier("config_showNavigationBar", "bool", "android");
+            if (id > 0) {
+                return resources.getBoolean(id);
+            } else {
+                // Check for keys
+                boolean hasMenuKey = ViewConfiguration.get(context).hasPermanentMenuKey();
+                boolean hasBackKey = KeyCharacterMap.deviceHasKey(KeyEvent.KEYCODE_BACK);
+                return !hasMenuKey && !hasBackKey;
             }
+        } else {
+            return false;
         }
-        if (cursor != null)
-            cursor.close();
-    }*/
+    }
+    public void windowNoLimit () {
+        //this value needs to be combined with style to works fine...
+        parentLayout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
-    private void initAudio() {
-        ContentResolver contentResolver = getContentResolver();
-        final Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        final String[] cursor_cols = {
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media.ALBUM,
-                MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.DATA,
-                MediaStore.Audio.Media.ALBUM_ID,
-                MediaStore.Audio.Media.DURATION};
-        final String where = MediaStore.Audio.Media.IS_MUSIC + "!=0";
-        final Cursor cursor = contentResolver.query(uri, cursor_cols, where, null, null);
-
-        if (cursor != null && cursor.getCount() > 0) {
-            audioList = new ArrayList<>();
-            while (cursor.moveToNext()) {
-                String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-                String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
-                String track = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-                String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
-                int duration = cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION));
-                String durationinString = String.valueOf(duration);
-
-                Long albumId = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID));
-                Uri sArtworkUri = Uri.parse("content://media/external/audio/albumart");
-                Uri albumArtUri = ContentUris.withAppendedId(sArtworkUri, albumId);
-                //Logger.debug(albumArtUri.toString());
-                Bitmap bitmap = null;
-                try {
-                    bitmap = MediaStore.Images.Media.getBitmap(contentResolver, albumArtUri);
-                    bitmap = Bitmap.createScaledBitmap(bitmap, 30, 30, true);
-                } catch (FileNotFoundException exception) {
-                    exception.printStackTrace();
-                    //bitmap = BitmapFactory.decodeResource(MainActivity.this.getResources(), R.drawable.ga_july);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                /*AudioListModel audioListModel = new AudioListModel();
-                audioListModel.setArtist(artist);
-                audioListModel.setBitmap(bitmap);
-                audioListModel.setAlbum(album);
-                audioListModel.setTrack(track);
-                audioListModel.setData(data);
-                audioListModel.setAlbumId(albumId);
-                audioListModel.setDuration(duration);
-                audioListModel.setAlbumArtUri(albumArtUri);*/
-                audioList.add(new Audio(data, track, album, artist, albumArtUri, durationinString, bitmap));
-
-            }
-        }
-        if (cursor != null)
-            cursor.close();
     }
 
 
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (serviceBound) {
-            unbindService(serviceConnection);
-            //service is active
-            player.stopSelf();
-        }
-    }
 }

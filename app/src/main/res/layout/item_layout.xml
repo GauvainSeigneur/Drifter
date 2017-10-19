@@ -14,22 +14,12 @@
         android:orientation="horizontal"
         android:padding="10dp">
 
-        <ImageButton
-            android:id="@+id/play_pause"
-            android:layout_width="45dp"
-            android:layout_height="45dp"
-            android:src="@android:drawable/ic_media_play"
-            android:layout_gravity="center_vertical"
-            android:tint="@color/colorAccent"
-            android:foregroundGravity="center_vertical"
-            android:layout_marginLeft="4dp"
-            android:layout_marginRight="8dp" />
-
         <ImageView
             android:id="@+id/cover"
             android:layout_margin="4dp"
             android:layout_width="45dp"
             android:layout_height="45dp"
+            android:src="@drawable/ga_april"
             android:scaleType="centerCrop"/>
 
         <TextView

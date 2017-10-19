@@ -1,6 +1,7 @@
 package io.drifterapp.drifter.recyclerView;
 
 import android.content.Context;
+import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -77,14 +78,12 @@ public class RecyclerView_Adapter extends RecyclerView.Adapter<ViewHolder> {
 class ViewHolder extends RecyclerView.ViewHolder {
 
     TextView title;
-    ImageView play_pause;
     ImageView cover;
     TextView duration;
 
     ViewHolder(View itemView) {
         super(itemView);
         title = (TextView) itemView.findViewById(R.id.title);
-        play_pause = (ImageView) itemView.findViewById(R.id.play_pause);
         cover = (ImageView) itemView.findViewById(R.id.cover);
         duration = (TextView) itemView.findViewById(R.id.duration);
     }

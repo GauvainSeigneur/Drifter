@@ -8,4 +8,13 @@
         <item>@drawable/ga_may</item>
     </array>
 
+    <array name="reveal_bottom_nav_bg">
+        <item>@color/bottomNavColor_1</item>
+        <item>@color/bottomNavColor_2</item>
+        <item>@color/bottomNavColor_3</item>
+        <item>@color/bottomNavColor_4</item>
+        <item>@color/bottomNavColor_5</item>
+    </array>
+
+
 </resources>

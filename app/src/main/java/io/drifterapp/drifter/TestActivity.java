@@ -1,11 +1,8 @@
 package io.drifterapp.drifter;
 
-import android.content.ContentResolver;
 import android.content.ContentUris;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.Handler;
 import android.provider.MediaStore;
 import android.os.Bundle;
 import android.support.v4.widget.NestedScrollView;
@@ -21,7 +18,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import io.drifterapp.drifter.recyclerView.CustomTouchListener;
-import io.drifterapp.drifter.recyclerView.EndlessRecyclerOnScrollListener;
 import io.drifterapp.drifter.recyclerView.RecyclerView_Adapter;
 import io.drifterapp.drifter.recyclerView.onItemClickListener;
 
@@ -30,7 +26,6 @@ public class TestActivity extends AudioBaseActivity  {
     ///ArrayList<Audio> audioList;
     RecyclerView recyclerView;
     RecyclerView_Adapter adapter;
-    private EndlessRecyclerOnScrollListener scrollListener;
     private int mLoadedItems;
 
     NestedScrollView nestedScrollView;  //for smooth scrolling of recyclerview as well as to detect the end of recyclerview
@@ -40,7 +35,7 @@ public class TestActivity extends AudioBaseActivity  {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_test_two);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
@@ -72,10 +67,11 @@ public class TestActivity extends AudioBaseActivity  {
 
     private void setRVContent() {
         if (songMainList != null && songMainList.size() > 0) {
-            mLoadedItems = 10;//by default, load only ten item
+            mLoadedItems = 2;//by default, load only ten item
             adapter.setDisplayCount(mLoadedItems);
             LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
             linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+            //linearLayoutManager.setAutoMeasureEnabled(false);
             recyclerView.setLayoutManager(linearLayoutManager);
 
 

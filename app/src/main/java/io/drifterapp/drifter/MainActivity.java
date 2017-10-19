@@ -79,6 +79,19 @@ public class MainActivity extends AppCompatActivity {
         bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                //disable dragging
+
+                if (bottomSheetBehavior.getState()== BottomSheetBehavior.STATE_EXPANDED){
+                    if (newState == BottomSheetBehavior.STATE_DRAGGING) {
+                        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                    }
+
+                }
+
+                if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+                    bottomSheetBehavior.setPeekHeight((int) Utils.convertDpToPixel(152,MainActivity.this));
+                }
+
 
             }
 
